@@ -15,34 +15,27 @@
 #include "tag/Tag.hxx"
 #include <vector>
 
-static Ytdl::YtdlInit *ytdl_init;
+static EventLoop *event_loop;
 
 static void
-input_ytdl_init(EventLoop &event_loop, const ConfigBlock &block)
+input_ytdl_init(EventLoop &_event_loop, const ConfigBlock &block)
 {
-	ytdl_init = new Ytdl::YtdlInit(event_loop);
-
-	ytdl_init->Init(block);
-}
-
-static void
-input_ytdl_finish() noexcept
-{
-	delete ytdl_init;
+	event_loop = &_event_loop;
+	Ytdl::Init(block);
 }
 
 static bool
 input_ytdl_supports_uri(const char *uri) noexcept
 {
-	return ytdl_init->UriSupported(uri) != nullptr;
+	return Ytdl::UriSupported(uri) != nullptr;
 }
 
 static InputStreamPtr
 input_ytdl_open(const char *uri, Mutex &mutex)
 {
-	uri = ytdl_init->UriSupported(uri);
+	uri = Ytdl::UriSupported(uri);
 	if (uri) {
-		return std::make_unique<YtdlInputStream>(uri, mutex, ytdl_init->GetEventLoop());
+		return std::make_unique<YtdlInputStream>(uri, mutex, *event_loop);
 	}
 
 	return nullptr;
@@ -58,9 +51,9 @@ static std::set<std::string> input_ytdl_protocols() noexcept
 static std::unique_ptr<RemoteTagScanner>
 input_ytdl_scan_tags(const char* uri, RemoteTagHandler &handler)
 {
-	uri = ytdl_init->UriSupported(uri);
+	uri = Ytdl::UriSupported(uri);
 	if (uri) {
-		return std::make_unique<YtdlTagScanner>(ytdl_init->GetEventLoop(), uri, handler);
+		return std::make_unique<YtdlTagScanner>(*event_loop, uri, handler);
 	}
 
 	return nullptr;
@@ -70,7 +63,7 @@ const struct InputPlugin input_plugin_ytdl = {
 	"youtube-dl",
 	nullptr,
 	input_ytdl_init,
-	input_ytdl_finish,
+	nullptr,
 	input_ytdl_open,
 	input_ytdl_protocols,
 	input_ytdl_scan_tags,

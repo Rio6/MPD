@@ -4,7 +4,6 @@
 #include "input/InputStream.hxx"
 #include "util/Domain.hxx"
 #include <string>
-#include <forward_list>
 
 class EventLoop;
 class ConfigBlock;
@@ -13,21 +12,31 @@ extern const class Domain ytdl_domain;
 
 namespace Ytdl {
 
-class YtdlInit {
-	EventLoop* event_loop;
-	std::forward_list<std::string> domain_whitelist;
+class YtdlParams {
+	std::string cmd_name;
+	std::string config_file;
 
-public:
-	YtdlInit(EventLoop &_event_loop);
-	YtdlInit();
+	public:
+	YtdlParams() = default;
+	YtdlParams(std::string _cmd_name, std::string _config_file)
+		: cmd_name(_cmd_name), config_file(_config_file) {}
 
-	const char *UriSupported(const char *uri) const;
-	bool WhitelistMatch(const char *uri) const;
+	void ReadConfigBlock(const ConfigBlock &block);
 
-	void Init(const ConfigBlock &block);
+	const char *GetCommandName() const {
+		return cmd_name.c_str();
+	}
 
-	EventLoop &GetEventLoop() { return *event_loop; }
+	const char *GetConfigFile() const {
+		return config_file.empty() ? nullptr : config_file.c_str();
+	}
 };
+
+void Init(const ConfigBlock &block);
+
+const char *UriSupported(const char *uri);
+bool WhitelistMatch(const char *uri);
+const YtdlParams &GetParams();
 
 } // namespace Ytdl
 

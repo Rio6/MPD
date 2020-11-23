@@ -1,6 +1,7 @@
 #include "config.h"
 #include "Parser.hxx"
 #include "Invoke.hxx"
+#include "Init.hxx"
 #include "system/Error.hxx"
 #include "util/RuntimeError.hxx"
 #include "util/ScopeExit.hxx"
@@ -59,6 +60,8 @@ YtdlProcess::Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 			_exit(EXIT_FAILURE);
 		}
 
+		const YtdlParams &params = Ytdl::GetParams();
+
 		const char *playlist_flag;
 		switch (mode) {
 			case PlaylistMode::SINGLE:
@@ -69,8 +72,16 @@ YtdlProcess::Invoke(Yajl::Handle &handle, const char *url, PlaylistMode mode)
 				break;
 		}
 
-		if (execlp("youtube-dl", "youtube-dl",
-			"-Jf", "bestaudio/best", "--flat-playlist", playlist_flag, url, nullptr) < 0)
+		const char *config_file = params.GetConfigFile();
+		const char *config_flag = config_file ? "--config-location" : nullptr;
+
+		const char *command_name = params.GetCommandName();
+
+		if (execlp(command_name, command_name,
+			"-Jf", "bestaudio/best",
+			"--flat-playlist", playlist_flag,
+			url, config_flag, config_file,
+			nullptr) < 0)
 		{
 			_exit(EXIT_FAILURE);
 		}

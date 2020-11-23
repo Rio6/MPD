@@ -4,6 +4,7 @@
 #include "util/StringView.hxx"
 #include "util/StringCompare.hxx"
 #include "util/IterableSplitString.hxx"
+#include <forward_list>
 
 const Domain ytdl_domain("youtube-dl");
 
@@ -12,15 +13,23 @@ static const char* DEFAULT_WHITELIST =
 	"music.youtube.com "
 	"www.youtube.com";
 
+static bool initialized = false;
+static std::forward_list<std::string> domain_whitelist;
+static Ytdl::YtdlParams ytdl_params;
+
 namespace Ytdl {
 
-YtdlInit::YtdlInit(EventLoop &_event_loop): event_loop(&_event_loop) { }
-
-YtdlInit::YtdlInit(): event_loop(nullptr) { }
+void
+YtdlParams::ReadConfigBlock(const ConfigBlock &block) {
+	cmd_name = block.GetBlockValue("ytdl_command", "youtube-dl");
+	config_file = block.GetBlockValue("config_file", "");
+}
 
 const char *
-YtdlInit::UriSupported(const char *uri) const
+UriSupported(const char *uri)
 {
+	assert(initialized);
+
 	const char* p;
 
 	if ((p = StringAfterPrefix(uri, "ytdl://"))) {
@@ -33,8 +42,10 @@ YtdlInit::UriSupported(const char *uri) const
 }
 
 bool
-YtdlInit::WhitelistMatch(const char *uri) const
+WhitelistMatch(const char *uri)
 {
+	assert(initialized);
+
 	const char* p;
 	if (!(p = StringAfterPrefix(uri, "http://")) &&
 		!(p = StringAfterPrefix(uri, "https://"))) {
@@ -52,7 +63,7 @@ YtdlInit::WhitelistMatch(const char *uri) const
 }
 
 void
-YtdlInit::Init(const ConfigBlock &block)
+Init(const ConfigBlock &block)
 {
 	const char* domains = block.GetBlockValue("domain_whitelist", DEFAULT_WHITELIST);
 
@@ -61,6 +72,15 @@ YtdlInit::Init(const ConfigBlock &block)
 			domain_whitelist.emplace_front(domain.ToString());
 		}
 	}
+
+	ytdl_params.ReadConfigBlock(block);
+
+	initialized = true;
+}
+
+const YtdlParams
+&GetParams() {
+	return ytdl_params;
 }
 
 } // namespace Ytdl

@@ -8,24 +8,6 @@
 #include "tag/Builder.hxx"
 #include "tag/Tag.hxx"
 
-static Ytdl::YtdlInit *ytdl_init;
-
-static bool
-playlist_ytdl_init(const ConfigBlock &block)
-{
-	ytdl_init = new Ytdl::YtdlInit();
-
-	ytdl_init->Init(block);
-
-	return true;
-}
-
-static void
-playlist_ytdl_finish() noexcept
-{
-	delete ytdl_init;
-}
-
 static const char *const playlist_ytdl_schemes[] = {
 	"ytdl",
 	"http",
@@ -36,7 +18,7 @@ static const char *const playlist_ytdl_schemes[] = {
 static std::unique_ptr<SongEnumerator>
 playlist_ytdl_open_uri(const char *uri, [[maybe_unused]] Mutex &mutex)
 {
-	uri = ytdl_init->UriSupported(uri);
+	uri = Ytdl::UriSupported(uri);
 	if (!uri) {
 		return nullptr;
 	}
@@ -70,5 +52,4 @@ playlist_ytdl_open_uri(const char *uri, [[maybe_unused]] Mutex &mutex)
 
 const PlaylistPlugin ytdl_playlist_plugin =
 	PlaylistPlugin("youtube-dl", playlist_ytdl_open_uri)
-	.WithInit(playlist_ytdl_init, playlist_ytdl_finish)
 	.WithSchemes(playlist_ytdl_schemes);
