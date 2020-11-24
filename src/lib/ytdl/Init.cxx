@@ -21,7 +21,7 @@ namespace Ytdl {
 
 void
 YtdlParams::ReadConfigBlock(const ConfigBlock &block) {
-	cmd_name = block.GetBlockValue("ytdl_command", "youtube-dl");
+	cmd_name = block.GetBlockValue("command", "youtube-dl");
 	config_file = block.GetBlockValue("config_file", "");
 }
 
