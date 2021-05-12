@@ -52,16 +52,17 @@ playlist_ytdl_open_uri(const char *uri, [[maybe_unused]] Mutex &mutex)
 
 	std::forward_list<DetachedSong> songs;
 	if (metadata.GetEntries().empty()) {
-		std::string url(uri /* metadata.GetWebpageURL() */);
+		DetachedSong &song = songs.emplace_front(metadata.GetURL(), std::move(playlist));
+		std::string url(uri);
 		url.insert(0, "ytdl://");
-		songs.emplace_front(url.c_str(), std::move(playlist));
+		song.SetRealURI(std::move(url));
 	} else {
 		// The entries are reversed already, so don't need to reverse in the end
 		for (auto &entry : metadata.GetEntries()) {
-			std::string url = entry.GetWebpageURL().empty()
-				? entry.GetURL() : entry.GetWebpageURL();
+			DetachedSong &song = songs.emplace_front(entry.GetURL(), entry.GetTagBuilder().Commit());
+			std::string url = entry.GetWebpageURL().empty() ? entry.GetURL() : entry.GetWebpageURL();
 			url.insert(0, "ytdl://");
-			songs.emplace_front(url.c_str(), entry.GetTagBuilder().Commit());
+			song.SetRealURI(std::move(url));
 		}
 	}
 
